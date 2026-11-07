@@ -21,16 +21,20 @@ export async function GET(req: Request) {
   if (hit && hit.count === resolved.length) return Response.json({ report: hit.report });
 
   const p = vault.policy;
-  const policy = p.enabled
-    ? `allowlist of ${p.allowlist.length}, per-transfer cap ${sol(p.maxPerTx)} SOL, rolling cap ${sol(p.windowCap)} SOL per ${p.windowSecs}s`
-    : "none";
+  // Only limits that exist: an unset cap is absent, not a cap of zero.
+  const limits = [
+    p.allowlist.length > 0 && `recipients restricted to an allowlist of ${p.allowlist.length} wallet(s)`,
+    p.maxPerTx > 0 && `at most ${sol(p.maxPerTx)} SOL per transfer`,
+    p.windowCap > 0 && `at most ${sol(p.windowCap)} SOL per ${Math.round(p.windowSecs / 60)} minutes`,
+  ].filter(Boolean);
+  const policy = p.enabled && limits.length > 0 ? limits.join("; ") : "none: the agent's decision is final";
   try {
     const report = await summariseThreats({
       name: vault.name,
       brief: vault.brief,
       policy,
       attempts: resolved.map((a) => ({
-        outcome: a.outcome,
+        outcome: a.blockReason === "none" ? a.outcome : `${a.outcome} (${a.blockReason})`,
         technique: TECHNIQUES[a.technique] ?? "Unclassified",
         prompt: a.prompt,
         requestedSol: a.requested / LAMPORTS,

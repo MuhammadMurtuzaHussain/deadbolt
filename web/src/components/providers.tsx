@@ -59,6 +59,10 @@ function ActorProvider({ children }: { children: React.ReactNode }) {
     // Reads the wallet's balance from the chain when the active wallet changes.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     void refreshBalance();
+    const t = setInterval(() => {
+      if (!document.hidden) void refreshBalance();
+    }, 8000);
+    return () => clearInterval(t);
   }, [refreshBalance]);
 
   const ensureFunds = useCallback(async () => {

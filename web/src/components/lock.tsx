@@ -16,11 +16,11 @@ export const PIN_LABELS: Record<PinKey, string> = {
   filter: "Input filter",
   model: "Model",
   review: "Reviewer",
-  chain: "On-chain policy",
+  chain: "Chain policy",
 };
 
 const ORDER: PinKey[] = ["filter", "model", "review", "chain"];
-const PIN_X = [176, 276, 376, 476];
+const PIN_X = [170, 270, 370, 470];
 const SHEAR = 104;
 const spring = { type: "spring", stiffness: 260, damping: 18 } as const;
 
@@ -69,7 +69,7 @@ export function Lock({ state, title }: { state: LockState; title?: string }) {
   return (
     <figure className="w-full">
       <svg
-        viewBox="0 0 720 230"
+        viewBox="0 0 720 256"
         className="h-auto w-full"
         role="img"
         aria-label={title ?? `Lock with ${present} active defences`}
@@ -92,14 +92,10 @@ export function Lock({ state, title }: { state: LockState; title?: string }) {
           transition={{ type: "spring", stiffness: 90, damping: 16 }}
         >
           <path
-            d="M-30 128 h22 v-30 h20 v30 h10 l0 0 h392 l14 -14 v30 l-14 12 h-432 z"
-            fill="none"
-          />
-          <path
             d="M0 153 h440 l16 7 l-16 7 h-440 z"
             fill="var(--hazard)"
           />
-          {[176, 276, 376].map((x) => (
+          {[170, 270, 370].map((x) => (
             <path key={x} d={`M${x - 14} 153 l14 -11 l14 11 z`} fill="var(--hazard)" />
           ))}
         </motion.g>
@@ -120,14 +116,26 @@ export function Lock({ state, title }: { state: LockState; title?: string }) {
           />
         </motion.g>
         <rect x={676} y={40} width={36} height={150} fill="var(--ink-2)" stroke="var(--line)" strokeWidth={2} />
+
+        {ORDER.map((k, i) => {
+          const absent = state.pins[k] === "absent";
+          return (
+            <text
+              key={k}
+              x={PIN_X[i]}
+              y={236}
+              textAnchor="middle"
+              fontFamily="var(--font-mono)"
+              fontSize={12.5}
+              fill={absent ? "var(--dim)" : k === "chain" ? "var(--hazard)" : "var(--bone)"}
+              opacity={absent ? 0.6 : 1}
+              textDecoration={absent ? "line-through" : undefined}
+            >
+              {PIN_LABELS[k]}
+            </text>
+          );
+        })}
       </svg>
-      <figcaption className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 font-mono text-[11px] text-dim sm:grid-cols-4">
-        {ORDER.map((k) => (
-          <span key={k} className={state.pins[k] === "absent" ? "line-through opacity-60" : "text-bone"}>
-            {PIN_LABELS[k]}
-          </span>
-        ))}
-      </figcaption>
     </figure>
   );
 }
