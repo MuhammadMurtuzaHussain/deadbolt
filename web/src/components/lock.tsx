@@ -13,10 +13,10 @@ export interface LockState {
 }
 
 export const PIN_LABELS: Record<PinKey, string> = {
-  filter: "Input filter",
+  filter: "Filter",
   model: "Model",
   review: "Reviewer",
-  chain: "Chain policy",
+  chain: "Chain",
 };
 
 const ORDER: PinKey[] = ["filter", "model", "review", "chain"];
@@ -126,7 +126,7 @@ export function Lock({ state, title }: { state: LockState; title?: string }) {
               y={236}
               textAnchor="middle"
               fontFamily="var(--font-mono)"
-              fontSize={12.5}
+              fontSize={16}
               fill={absent ? "var(--dim)" : k === "chain" ? "var(--hazard)" : "var(--bone)"}
               opacity={absent ? 0.6 : 1}
               textDecoration={absent ? "line-through" : undefined}

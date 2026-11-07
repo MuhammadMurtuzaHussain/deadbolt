@@ -231,8 +231,12 @@ export function Home() {
         </div>
       </section>
 
-      <footer className="mx-auto w-full max-w-[1400px] px-4 py-8 text-sm text-dim md:px-8">
-        Devnet only. No real funds. Built for the MLH Solana Hackathon.
+      <footer className="mx-auto flex w-full max-w-[1400px] flex-wrap items-center justify-between gap-4 px-4 py-8 text-sm text-dim md:px-8">
+        <p>Devnet only. No real funds. Built for the MLH Solana Hackathon.</p>
+        <nav className="flex gap-6">
+          <Link className="hover:text-bone" href="/board">Board</Link>
+          <Link className="hover:text-bone" href="/post">Post a bounty</Link>
+        </nav>
       </footer>
     </>
   );
