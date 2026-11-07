@@ -1,0 +1,63 @@
+@import "tailwindcss";
+
+:root {
+  --ink: #101114;
+  --ink-2: #17191d;
+  --ink-3: #22252b;
+  --line: #33373f;
+  --bone: #e9e7e1;
+  --dim: #a3a39d;
+  --hazard: #f7d117;
+  --hazard-ink: #15130a;
+  --loss: #ff4b33;
+}
+
+@theme inline {
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-line: var(--line);
+  --color-bone: var(--bone);
+  --color-dim: var(--dim);
+  --color-hazard: var(--hazard);
+  --color-hazard-ink: var(--hazard-ink);
+  --color-loss: var(--loss);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  --font-stencil: var(--font-stencil-face);
+}
+
+html {
+  color-scheme: dark;
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--ink);
+  color: var(--bone);
+  font-family: var(--font-sans), system-ui, sans-serif;
+}
+
+::selection {
+  background: var(--hazard);
+  color: var(--hazard-ink);
+}
+
+:focus-visible {
+  outline: 2px solid var(--hazard);
+  outline-offset: 2px;
+}
+
+.hazard-tape {
+  background: repeating-linear-gradient(
+    -45deg,
+    var(--hazard) 0 18px,
+    var(--ink) 18px 36px
+  );
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}

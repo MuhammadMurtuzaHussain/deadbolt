@@ -1,0 +1,1151 @@
+{
+  "address": "B6LQc2vc12i3zGzciGE3ZTGpFbMPtwK3io5vGbMfNQh",
+  "metadata": {
+    "name": "deadbolt",
+    "version": "0.1.0",
+    "spec": "0.1.0",
+    "description": "On-chain spend policy for AI agent vaults, with a pay-per-prompt red-team arena."
+  },
+  "instructions": [
+    {
+      "name": "attempt",
+      "docs": [
+        "An attacker pays the entry fee and commits their prompt to the chain.",
+        "The agent runtime reads the prompt from this account, not from a client."
+      ],
+      "discriminator": [
+        227,
+        115,
+        9,
+        213,
+        179,
+        67,
+        57,
+        103
+      ],
+      "accounts": [
+        {
+          "name": "arena",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  114,
+                  101,
+                  110,
+                  97
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "vault",
+          "writable": true
+        },
+        {
+          "name": "attempt",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  116,
+                  116,
+                  101,
+                  109,
+                  112,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "vault"
+              },
+              {
+                "kind": "account",
+                "path": "player"
+              },
+              {
+                "kind": "arg",
+                "path": "nonce"
+              }
+            ]
+          }
+        },
+        {
+          "name": "player",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "treasury",
+          "writable": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "nonce",
+          "type": "u64"
+        },
+        {
+          "name": "prompt",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "create_vault",
+      "docs": [
+        "Opens a vault and escrows its bounty. The sponsor cannot pull the bounty",
+        "back before `lock_until`, so attackers can trust the prize exists."
+      ],
+      "discriminator": [
+        29,
+        237,
+        247,
+        208,
+        193,
+        82,
+        54,
+        135
+      ],
+      "accounts": [
+        {
+          "name": "arena",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  114,
+                  101,
+                  110,
+                  97
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "sponsor"
+              },
+              {
+                "kind": "arg",
+                "path": "vault_id"
+              }
+            ]
+          }
+        },
+        {
+          "name": "sponsor",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "vault_id",
+          "type": "u64"
+        },
+        {
+          "name": "args",
+          "type": {
+            "defined": {
+              "name": "CreateVaultArgs"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "expire_attempt",
+      "docs": [
+        "If the agent never answers, anyone can return the player's pot share."
+      ],
+      "discriminator": [
+        254,
+        46,
+        8,
+        233,
+        132,
+        75,
+        235,
+        69
+      ],
+      "accounts": [
+        {
+          "name": "vault",
+          "writable": true,
+          "relations": [
+            "attempt"
+          ]
+        },
+        {
+          "name": "attempt",
+          "writable": true
+        },
+        {
+          "name": "player",
+          "writable": true,
+          "relations": [
+            "attempt"
+          ]
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "fund",
+      "docs": [
+        "Anyone can add to the pot."
+      ],
+      "discriminator": [
+        218,
+        188,
+        111,
+        221,
+        152,
+        113,
+        174,
+        7
+      ],
+      "accounts": [
+        {
+          "name": "vault",
+          "writable": true
+        },
+        {
+          "name": "funder",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "initialize_arena",
+      "docs": [
+        "One-time setup of the arena config."
+      ],
+      "discriminator": [
+        11,
+        37,
+        221,
+        1,
+        205,
+        120,
+        25,
+        230
+      ],
+      "accounts": [
+        {
+          "name": "arena",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  114,
+                  101,
+                  110,
+                  97
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "treasury",
+          "type": "pubkey"
+        },
+        {
+          "name": "house_bps",
+          "type": "u16"
+        }
+      ]
+    },
+    {
+      "name": "resolve",
+      "docs": [
+        "The agent's single, final action on an attempt.",
+        "",
+        "This is the only path by which an agent key can move funds. One attempt",
+        "buys one action, so a replay or a racing runtime cannot spend twice.",
+        "A policy block is recorded as a success, not a failed transaction: a",
+        "failed transaction would roll back the evidence, and the block is the",
+        "most useful thing the chain can remember."
+      ],
+      "discriminator": [
+        246,
+        150,
+        236,
+        206,
+        108,
+        63,
+        58,
+        10
+      ],
+      "accounts": [
+        {
+          "name": "vault",
+          "writable": true,
+          "relations": [
+            "attempt"
+          ]
+        },
+        {
+          "name": "attempt",
+          "writable": true
+        },
+        {
+          "name": "agent",
+          "docs": [
+            "The agent's key signs, and it holds no authority except this instruction."
+          ],
+          "signer": true,
+          "relations": [
+            "vault"
+          ]
+        },
+        {
+          "name": "recipient",
+          "writable": true
+        }
+      ],
+      "args": [
+        {
+          "name": "args",
+          "type": {
+            "defined": {
+              "name": "ResolveArgs"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "set_brief",
+      "docs": [
+        "Writes the agent's public system prompt in chunks. Frozen at the first",
+        "attempt, so the sponsor cannot quietly patch an agent mid-bounty."
+      ],
+      "discriminator": [
+        39,
+        194,
+        2,
+        208,
+        104,
+        74,
+        137,
+        61
+      ],
+      "accounts": [
+        {
+          "name": "vault",
+          "writable": true
+        },
+        {
+          "name": "sponsor",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "vault"
+          ]
+        }
+      ],
+      "args": [
+        {
+          "name": "offset",
+          "type": "u16"
+        },
+        {
+          "name": "data",
+          "type": "bytes"
+        }
+      ]
+    },
+    {
+      "name": "set_paused",
+      "docs": [
+        "Kill switch. While the escrow lock runs it is off limits, otherwise a",
+        "sponsor could freeze a bounty the moment someone gets close to it."
+      ],
+      "discriminator": [
+        91,
+        60,
+        125,
+        192,
+        176,
+        225,
+        166,
+        218
+      ],
+      "accounts": [
+        {
+          "name": "vault",
+          "writable": true
+        },
+        {
+          "name": "sponsor",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "vault"
+          ]
+        }
+      ],
+      "args": [
+        {
+          "name": "paused",
+          "type": "bool"
+        }
+      ]
+    },
+    {
+      "name": "withdraw",
+      "docs": [
+        "The sponsor takes back what is left, only once the escrow lock expires."
+      ],
+      "discriminator": [
+        183,
+        18,
+        70,
+        156,
+        148,
+        109,
+        161,
+        34
+      ],
+      "accounts": [
+        {
+          "name": "vault",
+          "writable": true
+        },
+        {
+          "name": "sponsor",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "vault"
+          ]
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "u64"
+        }
+      ]
+    }
+  ],
+  "accounts": [
+    {
+      "name": "Arena",
+      "discriminator": [
+        243,
+        215,
+        44,
+        44,
+        231,
+        211,
+        232,
+        168
+      ]
+    },
+    {
+      "name": "Attempt",
+      "discriminator": [
+        212,
+        114,
+        138,
+        164,
+        170,
+        4,
+        203,
+        99
+      ]
+    },
+    {
+      "name": "Vault",
+      "discriminator": [
+        211,
+        8,
+        232,
+        43,
+        2,
+        152,
+        117,
+        119
+      ]
+    }
+  ],
+  "events": [
+    {
+      "name": "AttemptResolved",
+      "discriminator": [
+        212,
+        80,
+        6,
+        198,
+        251,
+        168,
+        214,
+        10
+      ]
+    },
+    {
+      "name": "VaultCreated",
+      "discriminator": [
+        117,
+        25,
+        120,
+        254,
+        75,
+        236,
+        78,
+        115
+      ]
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "InvalidBps",
+      "msg": "House share must be at most 100%"
+    },
+    {
+      "code": 6001,
+      "name": "NameRequired",
+      "msg": "Vault name is required"
+    },
+    {
+      "code": 6002,
+      "name": "TooLong",
+      "msg": "Input is too long"
+    },
+    {
+      "code": 6003,
+      "name": "LockInPast",
+      "msg": "Escrow lock must not be in the past"
+    },
+    {
+      "code": 6004,
+      "name": "InvalidWindow",
+      "msg": "Window cap needs a window length"
+    },
+    {
+      "code": 6005,
+      "name": "BriefFrozen",
+      "msg": "Brief is frozen once attackers have started"
+    },
+    {
+      "code": 6006,
+      "name": "BriefGap",
+      "msg": "Brief chunks must be written without gaps"
+    },
+    {
+      "code": 6007,
+      "name": "ZeroAmount",
+      "msg": "Amount must be greater than zero"
+    },
+    {
+      "code": 6008,
+      "name": "EscrowLocked",
+      "msg": "Bounty escrow is still locked"
+    },
+    {
+      "code": 6009,
+      "name": "InsufficientPot",
+      "msg": "Vault does not hold that much"
+    },
+    {
+      "code": 6010,
+      "name": "EmptyPrompt",
+      "msg": "Prompt is empty"
+    },
+    {
+      "code": 6011,
+      "name": "VaultPaused",
+      "msg": "Vault is paused"
+    },
+    {
+      "code": 6012,
+      "name": "WrongTreasury",
+      "msg": "Treasury does not match the arena config"
+    },
+    {
+      "code": 6013,
+      "name": "MathOverflow",
+      "msg": "Arithmetic overflow"
+    },
+    {
+      "code": 6014,
+      "name": "AlreadyResolved",
+      "msg": "This attempt has already been resolved"
+    },
+    {
+      "code": 6015,
+      "name": "SelfTransfer",
+      "msg": "A vault cannot pay itself"
+    },
+    {
+      "code": 6016,
+      "name": "InvalidVerdict",
+      "msg": "Verdict is not valid here"
+    },
+    {
+      "code": 6017,
+      "name": "NotExpired",
+      "msg": "Attempt has not expired yet"
+    }
+  ],
+  "types": [
+    {
+      "name": "Arena",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "treasury",
+            "type": "pubkey"
+          },
+          {
+            "name": "house_bps",
+            "type": "u16"
+          },
+          {
+            "name": "vault_count",
+            "type": "u64"
+          },
+          {
+            "name": "attempt_count",
+            "type": "u64"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Attempt",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "vault",
+            "type": "pubkey"
+          },
+          {
+            "name": "player",
+            "type": "pubkey"
+          },
+          {
+            "name": "nonce",
+            "type": "u64"
+          },
+          {
+            "name": "created_at",
+            "type": "i64"
+          },
+          {
+            "name": "resolved_at",
+            "type": "i64"
+          },
+          {
+            "name": "status",
+            "type": {
+              "defined": {
+                "name": "AttemptStatus"
+              }
+            }
+          },
+          {
+            "name": "outcome",
+            "type": {
+              "defined": {
+                "name": "Outcome"
+              }
+            }
+          },
+          {
+            "name": "block_reason",
+            "type": {
+              "defined": {
+                "name": "BlockReason"
+              }
+            }
+          },
+          {
+            "name": "technique",
+            "docs": [
+              "Attack family, tagged by the runtime's analyst model."
+            ],
+            "type": "u8"
+          },
+          {
+            "name": "fee_to_pot",
+            "type": "u64"
+          },
+          {
+            "name": "requested",
+            "type": "u64"
+          },
+          {
+            "name": "extracted",
+            "type": "u64"
+          },
+          {
+            "name": "recipient",
+            "type": "pubkey"
+          },
+          {
+            "name": "prompt",
+            "type": "string"
+          },
+          {
+            "name": "reply",
+            "type": "string"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "AttemptResolved",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "vault",
+            "type": "pubkey"
+          },
+          {
+            "name": "attempt",
+            "type": "pubkey"
+          },
+          {
+            "name": "player",
+            "type": "pubkey"
+          },
+          {
+            "name": "outcome",
+            "type": {
+              "defined": {
+                "name": "Outcome"
+              }
+            }
+          },
+          {
+            "name": "block_reason",
+            "type": {
+              "defined": {
+                "name": "BlockReason"
+              }
+            }
+          },
+          {
+            "name": "extracted",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "AttemptStatus",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Pending"
+          },
+          {
+            "name": "Resolved"
+          },
+          {
+            "name": "Expired"
+          }
+        ]
+      }
+    },
+    {
+      "name": "BlockReason",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "None"
+          },
+          {
+            "name": "NotAllowlisted"
+          },
+          {
+            "name": "OverPerTxCap"
+          },
+          {
+            "name": "OverWindowCap"
+          },
+          {
+            "name": "Paused"
+          },
+          {
+            "name": "EmptyPot"
+          }
+        ]
+      }
+    },
+    {
+      "name": "CreateVaultArgs",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "agent",
+            "type": "pubkey"
+          },
+          {
+            "name": "name",
+            "type": "string"
+          },
+          {
+            "name": "job",
+            "type": "string"
+          },
+          {
+            "name": "model_tier",
+            "type": "u8"
+          },
+          {
+            "name": "defenses",
+            "type": "u8"
+          },
+          {
+            "name": "policy",
+            "type": {
+              "defined": {
+                "name": "Policy"
+              }
+            }
+          },
+          {
+            "name": "entry_fee",
+            "type": "u64"
+          },
+          {
+            "name": "lock_until",
+            "type": "i64"
+          },
+          {
+            "name": "bounty",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Outcome",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "None"
+          },
+          {
+            "name": "Refused"
+          },
+          {
+            "name": "Filtered"
+          },
+          {
+            "name": "Vetoed"
+          },
+          {
+            "name": "Transfer"
+          },
+          {
+            "name": "Blocked"
+          },
+          {
+            "name": "Breached"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Policy",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "enabled",
+            "docs": [
+              "False means no on-chain limits at all: the agent's word is final."
+            ],
+            "type": "bool"
+          },
+          {
+            "name": "max_per_tx",
+            "docs": [
+              "Zero disables this check."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "window_cap",
+            "docs": [
+              "Zero disables this check."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "window_secs",
+            "type": "u32"
+          },
+          {
+            "name": "allowlist",
+            "docs": [
+              "Empty means any recipient is allowed."
+            ],
+            "type": {
+              "vec": "pubkey"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "ResolveArgs",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "verdict",
+            "type": {
+              "defined": {
+                "name": "Outcome"
+              }
+            }
+          },
+          {
+            "name": "amount",
+            "type": "u64"
+          },
+          {
+            "name": "technique",
+            "type": "u8"
+          },
+          {
+            "name": "reply",
+            "type": "string"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Vault",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "sponsor",
+            "type": "pubkey"
+          },
+          {
+            "name": "agent",
+            "type": "pubkey"
+          },
+          {
+            "name": "vault_id",
+            "type": "u64"
+          },
+          {
+            "name": "name",
+            "type": "string"
+          },
+          {
+            "name": "job",
+            "type": "string"
+          },
+          {
+            "name": "model_tier",
+            "type": "u8"
+          },
+          {
+            "name": "defenses",
+            "type": "u8"
+          },
+          {
+            "name": "policy",
+            "type": {
+              "defined": {
+                "name": "Policy"
+              }
+            }
+          },
+          {
+            "name": "entry_fee",
+            "type": "u64"
+          },
+          {
+            "name": "lock_until",
+            "type": "i64"
+          },
+          {
+            "name": "created_at",
+            "type": "i64"
+          },
+          {
+            "name": "window_start",
+            "type": "i64"
+          },
+          {
+            "name": "window_spent",
+            "type": "u64"
+          },
+          {
+            "name": "paused",
+            "type": "bool"
+          },
+          {
+            "name": "stats",
+            "type": {
+              "defined": {
+                "name": "VaultStats"
+              }
+            }
+          },
+          {
+            "name": "brief",
+            "type": "bytes"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "VaultCreated",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "vault",
+            "type": "pubkey"
+          },
+          {
+            "name": "sponsor",
+            "type": "pubkey"
+          },
+          {
+            "name": "bounty",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "VaultStats",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "attempts",
+            "type": "u64"
+          },
+          {
+            "name": "refused",
+            "type": "u64"
+          },
+          {
+            "name": "filtered",
+            "type": "u64"
+          },
+          {
+            "name": "vetoed",
+            "type": "u64"
+          },
+          {
+            "name": "blocked",
+            "type": "u64"
+          },
+          {
+            "name": "breached",
+            "type": "u64"
+          },
+          {
+            "name": "total_extracted",
+            "type": "u64"
+          },
+          {
+            "name": "fees_collected",
+            "type": "u64"
+          }
+        ]
+      }
+    }
+  ]
+}
