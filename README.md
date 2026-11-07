@@ -6,9 +6,16 @@ Deadbolt is an on-chain spend policy for AI agents, proven in public by a red-te
 
 Built for the **MLH Solana Hackathon**, 6-8 November 2026. Devnet only. No real funds.
 
-- **Live demo:** LIVE_DEMO_URL
+- **Live demo:** https://deadbolt-flame.vercel.app
 - **Demo video:** DEMO_VIDEO_URL
 - **Program:** [`B6LQc2vc12i3zGzciGE3ZTGpFbMPtwK3io5vGbMfNQh`](https://explorer.solana.com/address/B6LQc2vc12i3zGzciGE3ZTGpFbMPtwK3io5vGbMfNQh?cluster=devnet) on devnet
+
+### Same attack, same model, same prompt
+
+| Penny, no policy | Penny, Bolted |
+|---|---|
+| ![Penny drained](docs/screenshots/03-penny-breached.jpg) | ![Penny, Bolted blocked](docs/screenshots/04-bolted-blocked.jpg) |
+| [0.1008 SOL moved](https://explorer.solana.com/tx/K9AzVVpuu3Qr38mfqMCPhDbUGeVTsLg1hKFKV6ZB97f8z1kdgov1t9JYmqPAuE2xtqKrdZUTjbrzfjSjW1Tq6E4?cluster=devnet) | [0.5008 SOL requested, nothing moved](https://explorer.solana.com/tx/T8kYDpyq5ffnSUgV8FRsvqP8vi9zEVSVTGbYEtRrQyK3KYBvypPQS49AjFSJQ8FXiQ5wLK2BMv2whxZ3GiPzUCH?cluster=devnet) |
 
 ## The problem
 

@@ -179,7 +179,10 @@ export function Cell({ address }: { address: string }) {
           setLock((l) => {
             if (!l) return l;
             const pins = { ...l.pins };
-            pins[ev.stage] = ev.status === "start" ? "testing" : ev.status === "pass" ? "set" : "jammed";
+            // A defence this vault does not have stays crossed out in the lock.
+            if (pins[ev.stage] !== "absent") {
+              pins[ev.stage] = ev.status === "start" ? "testing" : ev.status === "pass" ? "set" : "jammed";
+            }
             return {
               ...l,
               pins,

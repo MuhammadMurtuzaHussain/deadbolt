@@ -9,3 +9,6 @@ node_modules/
 *.log
 test-ledger/
 .env*.local
+
+# Raw screen captures, uploaded by hand
+demo-capture/

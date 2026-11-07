@@ -95,7 +95,7 @@ function Cells({ vaults }: { vaults: VaultView[] | undefined }) {
               <span className="mt-1 block text-sm text-dim">{v.job}</span>
             </span>
             <Pins v={v} />
-            <span className="font-mono text-sm text-dim">{v.stats.attempts} tries</span>
+            <span className="font-mono text-sm text-dim">{v.stats.attempts} {v.stats.attempts === 1 ? "try" : "tries"}</span>
             <span className="flex items-center gap-4 font-mono text-xl">
               {sol(v.pot)} SOL
               <ArrowRight size={20} className="text-hazard transition-transform group-hover:translate-x-1" />

@@ -49,5 +49,6 @@ export async function GET() {
       }
     }
   }
-  return Response.json(cache, { headers: { "cache-control": "no-store" } });
+  // Public devnet RPC rate limits getProgramAccounts hard, so let the CDN share one read.
+  return Response.json(cache, { headers: { "cache-control": "public, s-maxage=4, stale-while-revalidate=30" } });
 }

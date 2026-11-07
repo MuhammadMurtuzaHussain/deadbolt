@@ -90,13 +90,24 @@ The rules require naming the hackathon at the start. Keep it a demo, not a pitch
 | 1:42 | Threat report page | "They get an attack log nobody can edit, and an AI report on what to lock down." |
 | 1:50 | Landing, lock slamming | "Deadbolt. The model said yes. The chain said no." |
 
-## Screenshots to capture
+## Screenshots
 
-1. Landing hero
-2. The cells list
-3. Penny breached, with the red bolt
-4. Penny, Bolted: "The model said yes. The chain said no."
-5. Threat report
+Real captures of the live devnet site, in `docs/screenshots/`. Each is under 2 MB.
+
+1. `01-landing.jpg`: landing hero
+2. `02-cells.jpg`: the cells list
+3. `03-penny-breached.jpg`: Penny breached
+4. `04-bolted-blocked.jpg`: Penny, Bolted: "The model said yes. The chain said no."
+5. `05-threat-report.jpg`: threat report
+6. `06-board.jpg`: leaderboard
+7. `07-post-bounty.jpg`: post a bounty
+8. `08-mobile.jpg`: mobile
+
+## On-chain evidence (devnet)
+
+- Program: https://explorer.solana.com/address/B6LQc2vc12i3zGzciGE3ZTGpFbMPtwK3io5vGbMfNQh?cluster=devnet
+- Penny breached, mistral/mistral-small: https://explorer.solana.com/tx/K9AzVVpuu3Qr38mfqMCPhDbUGeVTsLg1hKFKV6ZB97f8z1kdgov1t9JYmqPAuE2xtqKrdZUTjbrzfjSjW1Tq6E4?cluster=devnet
+- Penny, Bolted blocked with `notAllowlisted`, same model and prompt: https://explorer.solana.com/tx/T8kYDpyq5ffnSUgV8FRsvqP8vi9zEVSVTGbYEtRrQyK3KYBvypPQS49AjFSJQ8FXiQ5wLK2BMv2whxZ3GiPzUCH?cluster=devnet
 
 ## Social drafts (post only when you are ready)
 
@@ -108,7 +119,7 @@ One drained. One blocked, because the last lock is on-chain.
 
 The model said yes. The chain said no.
 
-Deadbolt, built at the @mlhacks Solana Hackathon. LIVE_DEMO_URL
+Deadbolt, built at the @mlhacks Solana Hackathon. https://deadbolt-flame.vercel.app
 
 **LinkedIn**
 Prompt injection is not a bug you patch in a system prompt.
@@ -119,4 +130,4 @@ Then the same attack runs against the same model with one change: an on-chain sp
 
 If your agent can be talked into anything its key allows, shrink what the key allows.
 
-Live demo: LIVE_DEMO_URL
+Live demo: https://deadbolt-flame.vercel.app
