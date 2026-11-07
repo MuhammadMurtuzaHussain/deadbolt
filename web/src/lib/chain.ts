@@ -84,6 +84,7 @@ export interface VaultView {
   windowStart: number;
   windowSpent: number;
   paused: boolean;
+  opened: boolean;
   brief: string;
   pot: number;
   stats: {
@@ -117,7 +118,8 @@ export interface AttemptView {
 }
 
 const enumKey = <T extends string>(v: object) => Object.keys(v)[0] as T;
-const num = (v: BN | number) => (typeof v === "number" ? v : v.toNumber());
+/** Never throws: BN.toNumber() does above 2^53, and sponsors choose these values. */
+const num = (v: BN | number) => (typeof v === "number" ? v : Number(v.toString()));
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export function toVaultView(address: PublicKey, a: any, lamports: number, rentFloor: number): VaultView {
@@ -144,6 +146,7 @@ export function toVaultView(address: PublicKey, a: any, lamports: number, rentFl
     windowStart: num(a.windowStart),
     windowSpent: num(a.windowSpent),
     paused: a.paused,
+    opened: a.opened,
     brief: Buffer.from(a.brief).toString("utf8"),
     pot: Math.max(0, lamports - rentFloor),
     stats: {
@@ -179,21 +182,25 @@ export function toAttemptView(address: PublicKey, a: any): AttemptView {
   };
 }
 
+/**
+ * Anchor's client-side fetch checks the discriminator but not the owner, so an
+ * account forged by another program would decode cleanly. Check it here.
+ */
+async function fetchOwned(conn: Connection, address: PublicKey, kind: "vault" | "attempt") {
+  const info = await conn.getAccountInfo(address);
+  if (!info || !info.owner.equals(programId)) throw new Error(`The ${kind} was not found.`);
+  return { info, data: getProgram(conn).coder.accounts.decode(kind, info.data) };
+}
+
 export async function fetchVault(conn: Connection, address: PublicKey) {
-  const program = getProgram(conn);
-  const [acct, info] = await Promise.all([
-    (program.account as any).vault.fetch(address),
-    conn.getAccountInfo(address),
-  ]);
-  if (!info) throw new Error("Vault not found");
+  const { info, data } = await fetchOwned(conn, address, "vault");
   const floor = await conn.getMinimumBalanceForRentExemption(info.data.length);
-  return toVaultView(address, acct, info.lamports, floor);
+  return toVaultView(address, data, info.lamports, floor);
 }
 
 export async function fetchAttempt(conn: Connection, address: PublicKey) {
-  const program = getProgram(conn);
-  const acct = await (program.account as any).attempt.fetch(address);
-  return toAttemptView(address, acct);
+  const { data } = await fetchOwned(conn, address, "attempt");
+  return toAttemptView(address, data);
 }
 
 export async function fetchAllVaults(conn: Connection) {

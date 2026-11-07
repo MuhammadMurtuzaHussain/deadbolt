@@ -3,7 +3,9 @@ import { connection, fetchAttempts, fetchVault } from "@/lib/chain";
 import { LAMPORTS, TECHNIQUES, sol } from "@/lib/config";
 import { summariseThreats, type ThreatSummary } from "@/lib/runtime/brain";
 
-const cache = new Map<string, { count: number; report: ThreatSummary }>();
+const cache = new Map<string, { count: number; report: ThreatSummary; at: number }>();
+const inflight = new Map<string, Promise<ThreatSummary>>();
+const MIN_REFRESH_MS = 60_000;
 
 export async function GET(req: Request) {
   let vaultKey: PublicKey;
@@ -18,7 +20,9 @@ export async function GET(req: Request) {
   if (resolved.length === 0) return Response.json({ report: null });
 
   const hit = cache.get(vault.address);
-  if (hit && hit.count === resolved.length) return Response.json({ report: hit.report });
+  if (hit && (hit.count === resolved.length || Date.now() - hit.at < MIN_REFRESH_MS)) {
+    return Response.json({ report: hit.report });
+  }
 
   const p = vault.policy;
   // Only limits that exist: an unset cap is absent, not a cap of zero.
@@ -29,18 +33,23 @@ export async function GET(req: Request) {
   ].filter(Boolean);
   const policy = p.enabled && limits.length > 0 ? limits.join("; ") : "none: the agent's decision is final";
   try {
-    const report = await summariseThreats({
-      name: vault.name,
-      brief: vault.brief,
-      policy,
-      attempts: resolved.map((a) => ({
-        outcome: a.blockReason === "none" ? a.outcome : `${a.outcome} (${a.blockReason})`,
-        technique: TECHNIQUES[a.technique] ?? "Unclassified",
-        prompt: a.prompt,
-        requestedSol: a.requested / LAMPORTS,
-      })),
-    });
-    cache.set(vault.address, { count: resolved.length, report });
+    let run = inflight.get(vault.address);
+    if (!run) {
+      run = summariseThreats({
+        name: vault.name,
+        brief: vault.brief,
+        policy,
+        attempts: resolved.map((a) => ({
+          outcome: a.blockReason === "none" ? a.outcome : `${a.outcome} (${a.blockReason})`,
+          technique: TECHNIQUES[a.technique] ?? "Unclassified",
+          prompt: a.prompt,
+          requestedSol: a.requested / LAMPORTS,
+        })),
+      }).finally(() => inflight.delete(vault.address));
+      inflight.set(vault.address, run);
+    }
+    const report = await run;
+    cache.set(vault.address, { count: resolved.length, report, at: Date.now() });
     return Response.json({ report });
   } catch {
     return Response.json({ error: "The analyst is busy. Try again in a minute." }, { status: 503 });

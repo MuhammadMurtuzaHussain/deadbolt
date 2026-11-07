@@ -25,7 +25,7 @@ Not Best Beginner Hack: it requires a team of more than 50% first-time hackers.
 ## Project description
 
 ### Inspiration
-AI agents are getting wallets, and I break AI agents for a living. I won the Lakera Agent Breaker prompt injection CTF at Dublin AI Week, and the lesson from every jailbreak is the same: you can't patch persuasion. If an agent reads untrusted text, it can be talked into anything its key allows. Filters and reviewer models are made of the same stuff as the thing they protect. So I wanted to build the lock that doesn't listen.
+AI agents are getting wallets, and I work in cybersecurity. I won the Lakera Agent Breaker prompt injection CTF at Dublin AI Week, and the lesson from every jailbreak is the same: you can't patch persuasion. If an agent reads untrusted text, it can be talked into anything its key allows. Filters and reviewer models are made of the same stuff as the thing they protect. So I wanted to build the lock that doesn't listen.
 
 ### What it does
 Deadbolt is an on-chain spend policy for AI agents, proven in public by a red-team arena.
@@ -37,7 +37,7 @@ The signature moment is the replay. Breach Penny, then send the same words to th
 Teams can put their own agent in a cell: set a prompt, AI defences and an on-chain policy, and escrow a bounty. The bounty is locked, the prompt freezes at the first attempt, and they get an attack log nobody can edit plus an AI threat report recommending specific policy changes.
 
 ### How I built it
-- **Anchor program (Rust).** Agent keys can only move funds through one instruction, `resolve`, which checks an allowlist, a per-transfer cap and a rolling cap the agent cannot edit. One paid attempt buys one action. A block is recorded as a successful transaction, because a failed one would roll back the evidence.
+- **Anchor program (Rust).** Agent keys can only move funds through one instruction, `resolve`, which checks an allowlist, a per-transfer cap and an hourly cap the agent cannot edit. One paid attempt buys one action. A block is recorded as a successful transaction, because a failed one would roll back the evidence.
 - **Everything is on-chain.** Prompts, replies, outcomes and system prompts live in program accounts. There is no database.
 - **Agent runtime (Next.js, AI SDK).** It reads each prompt from the chain, never from the request, and passes the model's decision to the program unchanged.
 - **A measured game.** I ran a matrix of real attacks against six models and tuned each level from the results.
@@ -47,7 +47,7 @@ Teams can put their own agent in a cell: set a prompt, AI defences and an on-cha
 Devnet's RPC faucet is closed, so scripted funding was out. I built and tested everything against a local validator first. The AI gateway's free tier allows five requests a minute per model, so each tier became a fallback chain across providers. The hardest design call was making policy blocks succeed instead of fail, since a reverted transaction erases the very evidence you want to keep.
 
 ### What I learned
-This was my first Solana program. The account model made the security story simpler than I expected: an agent key that can only sign one instruction is a much stronger guarantee than any prompt. I also learned how unevenly models fail. The same attack that drains one model barely moves another, which is exactly why the guarantee can't live at the model layer.
+Solana was new ground for me this weekend (edit this if it is not true for you). The account model made the security story simpler than I expected: an agent key that can only sign one instruction is a much stronger guarantee than any prompt. I also learned how unevenly models fail. The same attack that drains one model barely moves another, which is exactly why the guarantee can't live at the model layer.
 
 ### What's next
 SPL token and CPI support so any Solana agent can spend through a Deadbolt vault, bring-your-own-agent endpoints, and a public survival score other protocols can read before trusting an agent with funds.
@@ -64,7 +64,7 @@ Deadbolt uses Solana for what it is good at: every prompt is a paid transaction 
 Agents act through a real tool call on a real wallet. Around them sit an input filter, a second reviewer model, an attack classifier and an AI threat report. The project's thesis is about AI: it measures how models fail against prompt injection, and it proves the fix belongs outside the model.
 
 **DeFi Track**
-Deadbolt is a programmable vault: on-chain allowlists, per-transfer caps and rolling spend limits, plus escrowed bounties, fee splitting between pot and house, and refund guarantees. It is the spend-control primitive that agent-run treasuries need.
+Deadbolt is a programmable vault: on-chain allowlists, per-transfer caps and hourly spend limits, plus escrowed bounties, fee splitting between pot and house, and refund guarantees. It is the spend-control primitive that agent-run treasuries need.
 
 **Gaming Track**
 A pay-per-prompt arena with five escalating cells, real prize pots that grow with every attempt, real winnings, a leaderboard and a lock you pick one pin at a time. Every move is a transaction, and players truly own what they win.

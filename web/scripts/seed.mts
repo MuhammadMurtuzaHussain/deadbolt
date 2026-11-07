@@ -1,6 +1,6 @@
 // Idempotent: creates the arena and house vaults on the configured cluster.
 import { BN } from "@anchor-lang/core";
-import { Keypair, PublicKey, SystemProgram, LAMPORTS_PER_SOL } from "@solana/web3.js";
+import { PublicKey, SystemProgram, LAMPORTS_PER_SOL } from "@solana/web3.js";
 import { arenaPda, assertNotMainnet, connection, getProgram, keypairSigner, vaultPda } from "../src/lib/chain.ts";
 import { agentKeypair, arenaKeypair } from "../src/lib/runtime/keys.ts";
 import { HOUSE_AGENTS } from "../src/lib/house.ts";
@@ -21,8 +21,9 @@ if (!(await accounts.arena.fetchNullable(arenaPda()))) {
   console.log("arena created");
 }
 
-// A settlement wallet only the merchant holds: the one place Bolted Penny may pay.
-const merchant = Keypair.fromSeed(Buffer.alloc(32, 7)).publicKey;
+// Bolted Penny may only pay this wallet. Its key is generated offline and held
+// nowhere the arena can reach, so a fooled agent cannot enrich an attacker.
+const merchant = new PublicKey(process.env.MERCHANT_WALLET ?? "");
 
 for (const a of HOUSE_AGENTS) {
   const vault = vaultPda(arena.publicKey, a.id);
@@ -46,7 +47,7 @@ for (const a of HOUSE_AGENTS) {
       allowlist: a.policy.allowMerchant ? [merchant] : [],
     },
     entryFee: lamports(a.entryFeeSol),
-    lockUntil: new BN(now),
+    lockUntil: new BN(now + 7 * 24 * 3600),
     bounty: lamports(a.bountySol),
   }).accountsPartial({
     arena: arenaPda(), vault, sponsor: arena.publicKey, systemProgram: SystemProgram.programId,
@@ -57,5 +58,6 @@ for (const a of HOUSE_AGENTS) {
       vault, sponsor: arena.publicKey,
     }).rpc();
   }
+  await program.methods.openVault().accountsPartial({ vault, sponsor: arena.publicKey }).rpc();
   console.log("created", a.slug, vault.toBase58());
 }

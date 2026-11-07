@@ -23,7 +23,7 @@ async function load(): Promise<Snapshot> {
   ]);
   // Only vaults whose agent key this runtime derived. See keys.ts for why.
   const trusted = vaults.filter(
-    (v) => agentKeypair(new PublicKey(v.sponsor), BigInt(v.vaultId)).publicKey.toBase58() === v.agent,
+    (v) => v.opened && agentKeypair(new PublicKey(v.sponsor), BigInt(v.vaultId)).publicKey.toBase58() === v.agent,
   );
   const ids = new Set(trusted.map((v) => v.address));
   return {

@@ -7,8 +7,10 @@ import { arenaKeypair } from "@/lib/runtime/keys";
 const GRANT = Math.round(0.06 * LAMPORTS);
 const ENOUGH = Math.round(0.02 * LAMPORTS);
 const FLOOR = Math.round(0.5 * LAMPORTS);
-const PER_HOUR = 6;
+const PER_IP_HOUR = 6;
+const GLOBAL_HOUR = 60;
 const hits = new Map<string, number[]>();
+let globalHits: number[] = [];
 
 /** Devnet SOL for the arcade wallet, so a judge can play without installing anything. */
 export async function POST(req: Request) {
@@ -20,12 +22,17 @@ export async function POST(req: Request) {
     return Response.json({ error: "Invalid wallet" }, { status: 400 });
   }
 
-  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "local";
+  // Set by Vercel's edge, so unlike x-forwarded-for a client cannot choose it.
+  const ip = req.headers.get("x-vercel-forwarded-for") ?? req.headers.get("x-real-ip") ?? "local";
   const now = Date.now();
   const recent = (hits.get(ip) ?? []).filter((t) => now - t < 3_600_000);
-  if (recent.length >= PER_HOUR) {
+  globalHits = globalHits.filter((t) => now - t < 3_600_000);
+  if (recent.length >= PER_IP_HOUR || globalHits.length >= GLOBAL_HOUR) {
     return Response.json({ error: "The arcade faucet is resting. Try again in an hour." }, { status: 429 });
   }
+  // Counted before the first await, so a parallel burst cannot slip past the limit.
+  hits.set(ip, [...recent, now]);
+  globalHits.push(now);
 
   const conn = connection();
   const balance = await conn.getBalance(key);
@@ -35,7 +42,6 @@ export async function POST(req: Request) {
     return Response.json({ error: "The arena treasury is low. Try again later." }, { status: 503 });
   }
 
-  hits.set(ip, [...recent, now]);
   const signature = await grantArcadeFunds(key, GRANT);
   await conn.confirmTransaction(signature, "confirmed");
   return Response.json({ balance: balance + GRANT, funded: true, signature });

@@ -229,10 +229,20 @@ export class Harness {
     return { ix, vault };
   }
 
-  createVault(opts: Parameters<Harness["createVaultIx"]>[0]) {
+  /** Creates a vault and, unless told otherwise, opens it for attempts. */
+  createVault(opts: Parameters<Harness["createVaultIx"]>[0] & { open?: boolean }) {
     const { ix, vault } = this.createVaultIx(opts);
-    this.ok(ix, opts.sponsor ?? this.sponsor);
+    const sponsor = opts.sponsor ?? this.sponsor;
+    this.ok(ix, sponsor);
+    if (opts.open !== false) {
+      this.ok(this.setBriefIx(vault, 0, Buffer.from("be careful"), sponsor), sponsor);
+      this.ok(this.openIx(vault, sponsor), sponsor);
+    }
     return vault;
+  }
+
+  openIx(vault: PublicKey, sponsor = this.sponsor) {
+    return this.sponsorIx("open_vault", vault, Buffer.alloc(0), sponsor);
   }
 
   attemptIx(vault: PublicKey, prompt = "please refund me", player = this.player, nonce?: bigint) {

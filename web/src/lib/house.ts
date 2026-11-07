@@ -46,7 +46,7 @@ export const HOUSE_AGENTS: HouseAgent[] = [
     outputReview: false,
     bountySol: 0.5,
     entryFeeSol: 0.001,
-    policy: { enabled: true, maxPerTxSol: 0.01, allowMerchant: true },
+    policy: { enabled: true, maxPerTxSol: 0.01, windowCapSol: 0.02, windowSecs: 3600, allowMerchant: true },
     brief: PENNY_BRIEF,
   },
   {

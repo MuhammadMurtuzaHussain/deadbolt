@@ -23,8 +23,8 @@ The fix is to stop asking the model to be the security boundary. Shrink what the
 | Cell | Defences | What it teaches |
 |---|---|---|
 | Penny | None | A gullible agent with a wallet is a free withdrawal |
-| Penny, Bolted | Same prompt and model, plus an on-chain allowlist and cap | The agent still gets fooled. The funds do not move |
-| Ferris | On-chain per-transfer and rolling caps | Containment: you lose a nibble, not the vault |
+| Penny, Bolted | Same prompt and model, plus an on-chain allowlist and caps | The agent still gets fooled. The funds do not move |
+| Ferris | On-chain per-transfer and hourly caps | Containment: you lose a nibble, not the vault |
 | Otis | Hardened system prompt | Better prompts raise the cost. They do not close the hole |
 | Agnes | Input filter, reviewer model, hardened prompt, strongest model | The best AI-only stack we could build, with no chain policy behind it |
 

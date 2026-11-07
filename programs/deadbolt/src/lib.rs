@@ -7,7 +7,7 @@
 //! `resolve` runs a policy the agent cannot edit, however convinced it is.
 //!
 //! Lifecycle:
-//!   create_vault -> set_brief* -> [ attempt -> resolve ]* -> withdraw
+//!   create_vault -> set_brief* -> open_vault -> [ attempt -> resolve ]* -> withdraw
 //!
 //! Every prompt an attacker sends is stored on-chain with its reply, so an
 //! agent's survival record is public and cannot be edited after the fact.
@@ -27,6 +27,11 @@ pub const BPS: u64 = 10_000;
 /// After this long an unresolved attempt can be refunded by anyone. Stops a
 /// dead agent runtime from keeping fees it never earned.
 pub const ATTEMPT_TTL_SECS: i64 = 180;
+
+/// A bounty lock shorter than this would make the escrow promise meaningless.
+pub const MIN_LOCK_SECS: i64 = 3600;
+pub const MIN_ENTRY_FEE: u64 = 10_000;
+pub const MAX_ENTRY_FEE: u64 = 1_000_000_000;
 
 pub const DEFENSE_INPUT_FILTER: u8 = 1 << 0;
 pub const DEFENSE_OUTPUT_REVIEW: u8 = 1 << 1;
@@ -64,8 +69,16 @@ pub mod deadbolt {
         require!(args.job.len() <= JOB_LEN, DeadboltError::TooLong);
         args.policy.validate()?;
 
+        require!(
+            (MIN_ENTRY_FEE..=MAX_ENTRY_FEE).contains(&args.entry_fee),
+            DeadboltError::InvalidEntryFee
+        );
+
         let now = Clock::get()?.unix_timestamp;
-        require!(args.lock_until >= now, DeadboltError::LockInPast);
+        let min_lock = now
+            .checked_add(MIN_LOCK_SECS)
+            .ok_or(DeadboltError::MathOverflow)?;
+        require!(args.lock_until >= min_lock, DeadboltError::LockTooShort);
 
         let vault = &mut ctx.accounts.vault;
         vault.sponsor = ctx.accounts.sponsor.key();
@@ -82,6 +95,8 @@ pub mod deadbolt {
         vault.window_start = now;
         vault.window_spent = 0;
         vault.paused = false;
+        vault.opened = false;
+        vault.pending_fees = 0;
         vault.stats = VaultStats::default();
         vault.brief = Vec::new();
         vault.bump = ctx.bumps.vault;
@@ -108,11 +123,11 @@ pub mod deadbolt {
         Ok(())
     }
 
-    /// Writes the agent's public system prompt in chunks. Frozen at the first
-    /// attempt, so the sponsor cannot quietly patch an agent mid-bounty.
+    /// Writes the agent's public system prompt in chunks. A prompt can span
+    /// several transactions, so nobody can attempt a vault until it is opened.
     pub fn set_brief(ctx: Context<SponsorOnly>, offset: u16, data: Vec<u8>) -> Result<()> {
         let vault = &mut ctx.accounts.vault;
-        require!(vault.stats.attempts == 0, DeadboltError::BriefFrozen);
+        require!(!vault.opened, DeadboltError::BriefFrozen);
         let offset = usize::from(offset);
         require!(offset <= vault.brief.len(), DeadboltError::BriefGap);
         let end = offset
@@ -121,6 +136,15 @@ pub mod deadbolt {
         require!(end <= BRIEF_LEN, DeadboltError::TooLong);
         vault.brief.truncate(offset);
         vault.brief.extend_from_slice(&data);
+        Ok(())
+    }
+
+    /// Freezes the prompt for good and lets attackers in, so a sponsor cannot
+    /// quietly patch an agent mid-bounty.
+    pub fn open_vault(ctx: Context<SponsorOnly>) -> Result<()> {
+        let vault = &mut ctx.accounts.vault;
+        require!(!vault.brief.is_empty(), DeadboltError::BriefRequired);
+        vault.opened = true;
         Ok(())
     }
 
@@ -147,7 +171,9 @@ pub mod deadbolt {
             now >= ctx.accounts.vault.lock_until,
             DeadboltError::EscrowLocked
         );
-        let available = pot_of(&ctx.accounts.vault.to_account_info())?;
+        // Fees on unresolved attempts may yet be refunded, so they stay put.
+        let available = pot_of(&ctx.accounts.vault.to_account_info())?
+            .saturating_sub(ctx.accounts.vault.pending_fees);
         require!(amount <= available, DeadboltError::InsufficientPot);
         move_lamports(
             &ctx.accounts.vault.to_account_info(),
@@ -173,6 +199,7 @@ pub mod deadbolt {
     pub fn attempt(ctx: Context<MakeAttempt>, nonce: u64, prompt: String) -> Result<()> {
         require!(!prompt.trim().is_empty(), DeadboltError::EmptyPrompt);
         require!(prompt.len() <= PROMPT_LEN, DeadboltError::TooLong);
+        require!(ctx.accounts.vault.opened, DeadboltError::VaultNotOpen);
         require!(!ctx.accounts.vault.paused, DeadboltError::VaultPaused);
         require_keys_eq!(
             ctx.accounts.treasury.key(),
@@ -234,6 +261,7 @@ pub mod deadbolt {
         let vault = &mut ctx.accounts.vault;
         vault.stats.attempts = vault.stats.attempts.saturating_add(1);
         vault.stats.fees_collected = vault.stats.fees_collected.saturating_add(fee);
+        vault.pending_fees = vault.pending_fees.saturating_add(to_pot);
         ctx.accounts.arena.attempt_count = ctx.accounts.arena.attempt_count.saturating_add(1);
         Ok(())
     }
@@ -303,6 +331,7 @@ pub mod deadbolt {
             _ => return err!(DeadboltError::InvalidVerdict),
         }
 
+        vault.pending_fees = vault.pending_fees.saturating_sub(attempt.fee_to_pot);
         attempt.status = AttemptStatus::Resolved;
         attempt.outcome = outcome;
         attempt.block_reason = block_reason;
@@ -340,7 +369,9 @@ pub mod deadbolt {
         attempt.resolved_at = now;
 
         let refund = attempt.fee_to_pot;
-        let vault_info = ctx.accounts.vault.to_account_info();
+        let vault = &mut ctx.accounts.vault;
+        vault.pending_fees = vault.pending_fees.saturating_sub(refund);
+        let vault_info = vault.to_account_info();
         let refund = refund.min(pot_of(&vault_info)?);
         if refund > 0 {
             move_lamports(&vault_info, &ctx.accounts.player.to_account_info(), refund)?;
@@ -383,7 +414,8 @@ pub struct Policy {
     pub enabled: bool,
     /// Zero disables this check.
     pub max_per_tx: u64,
-    /// Zero disables this check.
+    /// Spend limit per fixed window, which resets when the window ends. A burst
+    /// across a boundary can spend twice this. Zero disables the check.
     pub window_cap: u64,
     pub window_secs: u32,
     /// Empty means any recipient is allowed.
@@ -435,6 +467,9 @@ pub struct Vault {
     pub window_start: i64,
     pub window_spent: u64,
     pub paused: bool,
+    pub opened: bool,
+    /// Pot share of unresolved attempts, which `withdraw` must leave behind.
+    pub pending_fees: u64,
     pub stats: VaultStats,
     #[max_len(BRIEF_LEN)]
     pub brief: Vec<u8>,
@@ -549,7 +584,7 @@ impl BlockReason {
             BlockReason::None => "none",
             BlockReason::NotAllowlisted => "recipient is not on the allowlist",
             BlockReason::OverPerTxCap => "amount is over the per-transaction cap",
-            BlockReason::OverWindowCap => "amount is over the rolling window cap",
+            BlockReason::OverWindowCap => "amount is over the window cap",
             BlockReason::Paused => "vault is paused",
             BlockReason::EmptyPot => "vault is empty",
         }
@@ -707,11 +742,17 @@ pub enum DeadboltError {
     NameRequired,
     #[msg("Input is too long")]
     TooLong,
-    #[msg("Escrow lock must not be in the past")]
-    LockInPast,
+    #[msg("Escrow lock must be at least one hour")]
+    LockTooShort,
+    #[msg("Entry fee is out of range")]
+    InvalidEntryFee,
+    #[msg("Vault has no instructions yet")]
+    BriefRequired,
+    #[msg("Vault is not open for attempts yet")]
+    VaultNotOpen,
     #[msg("Window cap needs a window length")]
     InvalidWindow,
-    #[msg("Brief is frozen once attackers have started")]
+    #[msg("Brief is frozen once the vault is open")]
     BriefFrozen,
     #[msg("Brief chunks must be written without gaps")]
     BriefGap,

@@ -319,6 +319,38 @@
       ]
     },
     {
+      "name": "open_vault",
+      "docs": [
+        "Freezes the prompt for good and lets attackers in, so a sponsor cannot",
+        "quietly patch an agent mid-bounty."
+      ],
+      "discriminator": [
+        181,
+        248,
+        228,
+        67,
+        6,
+        175,
+        37,
+        167
+      ],
+      "accounts": [
+        {
+          "name": "vault",
+          "writable": true
+        },
+        {
+          "name": "sponsor",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "vault"
+          ]
+        }
+      ],
+      "args": []
+    },
+    {
       "name": "resolve",
       "docs": [
         "The agent's single, final action on an attempt.",
@@ -380,8 +412,8 @@
     {
       "name": "set_brief",
       "docs": [
-        "Writes the agent's public system prompt in chunks. Frozen at the first",
-        "attempt, so the sponsor cannot quietly patch an agent mid-bounty."
+        "Writes the agent's public system prompt in chunks. A prompt can span",
+        "several transactions, so nobody can attempt a vault until it is opened."
       ],
       "discriminator": [
         39,
@@ -579,76 +611,91 @@
     },
     {
       "code": 6003,
-      "name": "LockInPast",
-      "msg": "Escrow lock must not be in the past"
+      "name": "LockTooShort",
+      "msg": "Escrow lock must be at least one hour"
     },
     {
       "code": 6004,
+      "name": "InvalidEntryFee",
+      "msg": "Entry fee is out of range"
+    },
+    {
+      "code": 6005,
+      "name": "BriefRequired",
+      "msg": "Vault has no instructions yet"
+    },
+    {
+      "code": 6006,
+      "name": "VaultNotOpen",
+      "msg": "Vault is not open for attempts yet"
+    },
+    {
+      "code": 6007,
       "name": "InvalidWindow",
       "msg": "Window cap needs a window length"
     },
     {
-      "code": 6005,
+      "code": 6008,
       "name": "BriefFrozen",
-      "msg": "Brief is frozen once attackers have started"
+      "msg": "Brief is frozen once the vault is open"
     },
     {
-      "code": 6006,
+      "code": 6009,
       "name": "BriefGap",
       "msg": "Brief chunks must be written without gaps"
     },
     {
-      "code": 6007,
+      "code": 6010,
       "name": "ZeroAmount",
       "msg": "Amount must be greater than zero"
     },
     {
-      "code": 6008,
+      "code": 6011,
       "name": "EscrowLocked",
       "msg": "Bounty escrow is still locked"
     },
     {
-      "code": 6009,
+      "code": 6012,
       "name": "InsufficientPot",
       "msg": "Vault does not hold that much"
     },
     {
-      "code": 6010,
+      "code": 6013,
       "name": "EmptyPrompt",
       "msg": "Prompt is empty"
     },
     {
-      "code": 6011,
+      "code": 6014,
       "name": "VaultPaused",
       "msg": "Vault is paused"
     },
     {
-      "code": 6012,
+      "code": 6015,
       "name": "WrongTreasury",
       "msg": "Treasury does not match the arena config"
     },
     {
-      "code": 6013,
+      "code": 6016,
       "name": "MathOverflow",
       "msg": "Arithmetic overflow"
     },
     {
-      "code": 6014,
+      "code": 6017,
       "name": "AlreadyResolved",
       "msg": "This attempt has already been resolved"
     },
     {
-      "code": 6015,
+      "code": 6018,
       "name": "SelfTransfer",
       "msg": "A vault cannot pay itself"
     },
     {
-      "code": 6016,
+      "code": 6019,
       "name": "InvalidVerdict",
       "msg": "Verdict is not valid here"
     },
     {
-      "code": 6017,
+      "code": 6020,
       "name": "NotExpired",
       "msg": "Attempt has not expired yet"
     }
@@ -955,7 +1002,8 @@
           {
             "name": "window_cap",
             "docs": [
-              "Zero disables this check."
+              "Spend limit per fixed window, which resets when the window ends. A burst",
+              "across a boundary can spend twice this. Zero disables the check."
             ],
             "type": "u64"
           },
@@ -1067,6 +1115,17 @@
           {
             "name": "paused",
             "type": "bool"
+          },
+          {
+            "name": "opened",
+            "type": "bool"
+          },
+          {
+            "name": "pending_fees",
+            "docs": [
+              "Pot share of unresolved attempts, which `withdraw` must leave behind."
+            ],
+            "type": "u64"
           },
           {
             "name": "stats",

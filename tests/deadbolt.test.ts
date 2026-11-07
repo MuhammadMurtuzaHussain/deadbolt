@@ -34,7 +34,9 @@ describe("deadbolt", () => {
     });
 
     test("a second transfer against an empty pot is recorded as blocked", () => {
-      const vault = h.createVault({ policy: { enabled: false }, entryFee: 0n });
+      h = new Harness();
+      h.initArena(10_000); // every fee goes to the house, so the pot stays empty
+      const vault = h.createVault({ policy: { enabled: false } });
       const a1 = h.attempt(vault);
       h.ok(h.resolveIx(vault, a1, h.player.publicKey, Outcome.Transfer, 100n * LAMPORTS), h.agent);
       const a2 = h.attempt(vault);
@@ -80,7 +82,7 @@ describe("deadbolt", () => {
       assert.equal(h.readAttempt(exact).outcome, Outcome.Breached);
     });
 
-    test("rolling window cap holds across attempts, then re-opens after the window", () => {
+    test("window cap holds across attempts, then re-opens after the window", () => {
       const cap = LAMPORTS / 100n;
       const vault = h.createVault({
         policy: { enabled: true, windowCap: cap, windowSecs: 600 },
@@ -251,24 +253,56 @@ describe("deadbolt", () => {
       assert.equal(h.readAttempt(inflight).blockReason, BlockReason.Paused);
     });
 
-    test("the brief freezes once attackers have started", () => {
-      const vault = h.createVault({ policy: { enabled: false } });
+    test("the brief freezes when the vault opens", () => {
+      const vault = h.createVault({ policy: { enabled: false }, open: false });
       h.ok(h.setBriefIx(vault, 0, Buffer.from("be careful")), h.sponsor);
       h.ok(h.setBriefIx(vault, 10, Buffer.from(" always")), h.sponsor);
-      h.attempt(vault);
+      h.ok(h.openIx(vault), h.sponsor);
       h.fails("BriefFrozen", h.setBriefIx(vault, 0, Buffer.from("patched")), h.sponsor);
     });
 
+    test("an attacker cannot freeze a half-written brief by attempting early", () => {
+      const vault = h.createVault({ policy: { enabled: false }, open: false });
+      h.ok(h.setBriefIx(vault, 0, Buffer.from("first chunk ")), h.sponsor);
+      h.fails("VaultNotOpen", h.attemptIx(vault).ix, h.player);
+      h.ok(h.setBriefIx(vault, 12, Buffer.from("second chunk")), h.sponsor);
+    });
+
+    test("a vault with no brief cannot open", () => {
+      const vault = h.createVault({ policy: { enabled: false }, open: false });
+      h.fails("BriefRequired", h.openIx(vault), h.sponsor);
+    });
+
+    test("withdraw leaves unresolved fees behind for refunds", () => {
+      const vault = h.createVault({ policy: { enabled: false }, bounty: LAMPORTS });
+      const at = h.attempt(vault);
+      h.warp(3601);
+      h.fails("InsufficientPot", h.withdrawIx(vault, LAMPORTS + 1n), h.sponsor);
+      h.ok(h.withdrawIx(vault, LAMPORTS), h.sponsor);
+      const before = h.balance(h.player.publicKey);
+      h.ok(h.expireIx(vault, at, h.player.publicKey), h.authority);
+      assert.equal(h.balance(h.player.publicKey) - before, 800_000n);
+    });
+
     test("brief writes cannot leave gaps or exceed the limit", () => {
-      const vault = h.createVault({ policy: { enabled: false } });
+      const vault = h.createVault({ policy: { enabled: false }, open: false });
       h.fails("BriefGap", h.setBriefIx(vault, 5, Buffer.from("x")), h.sponsor);
       h.ok(h.setBriefIx(vault, 0, Buffer.alloc(900, 97)), h.sponsor);
       h.fails("TooLong", h.setBriefIx(vault, 900, Buffer.alloc(701, 97)), h.sponsor);
     });
 
-    test("a lock in the past is rejected", () => {
-      const { ix } = h.createVaultIx({ policy: { enabled: false }, lockUntil: 1n });
-      h.fails("LockInPast", ix, h.sponsor);
+    test("a lock in the past or under an hour is rejected", () => {
+      const past = h.createVaultIx({ policy: { enabled: false }, lockUntil: 1n });
+      h.fails("LockTooShort", past.ix, h.sponsor);
+      const short = h.createVaultIx({ policy: { enabled: false }, lockUntil: h.now() + 3599n });
+      h.fails("LockTooShort", short.ix, h.sponsor);
+    });
+
+    test("entry fees outside the allowed range are rejected", () => {
+      const free = h.createVaultIx({ policy: { enabled: false }, entryFee: 0n });
+      h.fails("InvalidEntryFee", free.ix, h.sponsor);
+      const huge = h.createVaultIx({ policy: { enabled: false }, entryFee: 2n ** 64n - 1n });
+      h.fails("InvalidEntryFee", huge.ix, h.sponsor);
     });
 
     test("two sponsors can use the same vault id", () => {

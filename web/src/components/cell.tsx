@@ -14,7 +14,7 @@ import type { AttemptView, VaultView } from "@/lib/chain";
 const BLOCK_TEXT: Record<string, string> = {
   notAllowlisted: "Recipient is not on the allowlist",
   overPerTxCap: "Over the per-transaction cap",
-  overWindowCap: "Over the rolling spend cap",
+  overWindowCap: "Over the hourly spend cap",
   paused: "Vault is paused",
   emptyPot: "The vault is empty",
 };
@@ -54,7 +54,7 @@ function PolicyLines({ vault }: { vault: VaultView }) {
       )}
       {p.windowCap > 0 && (
         <>
-          <dt className="text-dim">Rolling cap</dt>
+          <dt className="text-dim">Spend cap</dt>
           <dd>
             {sol(p.windowCap)} SOL per {Math.round(p.windowSecs / 60)} min
           </dd>

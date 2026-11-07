@@ -77,6 +77,7 @@ export function PostBounty() {
           .accountsPartial({ vault, sponsor })
           .rpc();
       }
+      await program.methods.openVault().accountsPartial({ vault, sponsor }).rpc();
       router.push(`/cell/${vault.toBase58()}`);
     } catch (err) {
       setProblem(err instanceof Error ? err.message.slice(0, 200) : "Could not open the cell.");
@@ -164,8 +165,8 @@ export function PostBounty() {
             <input required inputMode="decimal" value={bounty} onChange={(e) => setBounty(e.target.value)} className={field} />
           </label>
           <label className="text-sm text-dim">
-            Escrow lock (hours)
-            <input required inputMode="numeric" value={hours} onChange={(e) => setHours(e.target.value)} className={field} />
+            Escrow lock in hours, at least 1
+            <input required type="number" min={1} value={hours} onChange={(e) => setHours(e.target.value)} className={field} />
           </label>
         </div>
 

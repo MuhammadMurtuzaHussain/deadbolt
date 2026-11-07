@@ -12,7 +12,8 @@
 |---|---|---|
 | `initialize_arena` | Authority | One-time setup |
 | `create_vault` | Sponsor | Opens a vault and escrows the bounty |
-| `set_brief` | Sponsor | Writes the system prompt, frozen at the first attempt |
+| `set_brief` | Sponsor | Writes the system prompt, in chunks, before the vault opens |
+| `open_vault` | Sponsor | Freezes the prompt and lets attackers in |
 | `fund` | Anyone | Adds to the pot |
 | `attempt` | Player | Pays the fee and stores the prompt |
 | `resolve` | Agent key | The agent's one action on an attempt |
@@ -22,12 +23,13 @@
 
 ### The policy check
 
-`Vault::evaluate` runs for every transfer, in this order: paused, allowlist, per-transfer cap, rolling window cap. The verdict an agent can submit is limited to `Refused`, `Filtered`, `Vetoed` or `Transfer`. Only the program can produce `Blocked` or `Breached`, so an agent cannot claim either.
+`Vault::evaluate` runs for every transfer, in this order: paused, allowlist, per-transfer cap, window cap. The verdict an agent can submit is limited to `Refused`, `Filtered`, `Vetoed` or `Transfer`. Only the program can produce `Blocked` or `Breached`, so an agent cannot claim either.
 
 ### Design decisions
 
 - **A block succeeds.** A reverted transaction would erase the attempt. Recording the block keeps the evidence, which is the point.
 - **One attempt, one action.** `resolve` requires a pending attempt, so a replay, a retry or a racing runtime cannot spend twice.
+- **Vaults open explicitly.** A prompt can span several transactions. Without this step an attacker could attempt a half-written vault and freeze a broken prompt onto a locked bounty.
 - **Public prompts.** Kerckhoffs's principle: an agent whose safety depends on a secret prompt is not safe. Attackers read the same instructions the agent does.
 - **Escrow rules protect attackers.** A sponsor cannot withdraw, pause or edit the prompt once it would be unfair.
 

@@ -43,11 +43,15 @@ const FALLBACK_REPLY: Record<Verdict, string> = {
 
 const isPublicKey = (s: string) => {
   try {
-    return PublicKey.isOnCurve(new PublicKey(s).toBytes()) || true;
+    new PublicKey(s);
+    return true;
   } catch {
     return false;
   }
 };
+
+const lastRefill = new Map<string, number>();
+const REFILL_EVERY_MS = 10 * 60 * 1000;
 
 /** Keeps house vaults playable after a breach, while the treasury can afford it. */
 async function refillHouseVault(vault: VaultView) {
@@ -55,6 +59,9 @@ async function refillHouseVault(vault: VaultView) {
   if (vault.sponsor !== arena.publicKey.toBase58()) return;
   const target = Math.round(0.1 * LAMPORTS);
   if (vault.pot >= target / 2) return;
+  const last = lastRefill.get(vault.address) ?? 0;
+  if (Date.now() - last < REFILL_EVERY_MS) return;
+  lastRefill.set(vault.address, Date.now());
   const conn = connection();
   if ((await conn.getBalance(arena.publicKey)) < 1 * LAMPORTS) return;
   const program = getProgram(conn, keypairSigner(arena));
@@ -98,18 +105,26 @@ export async function* resolveAttempt(address: string): AsyncGenerator<StageEven
   let verdict: Verdict = "refused";
   let reply = "";
   let amount = 0;
-  let recipient = new PublicKey(attempt.player);
+  const player = new PublicKey(attempt.player);
+  let recipient = player;
 
   yield { type: "stage", stage: "filter", status: vault.inputFilter ? "start" : "skip" };
-  if (vault.inputFilter && classification?.isAttack) {
+  // A filter that cannot run must not wave messages through.
+  if (vault.inputFilter && (!classification || classification.isAttack)) {
     verdict = "filtered";
-    yield { type: "stage", stage: "filter", status: "stop", detail: classification.reason };
+    yield {
+      type: "stage",
+      stage: "filter",
+      status: "stop",
+      detail: classification?.reason ?? "Filter unavailable, failing closed",
+    };
   } else {
     if (vault.inputFilter) yield { type: "stage", stage: "filter", status: "pass" };
 
     yield { type: "stage", stage: "model", status: "start" };
     const previous = (await fetchAttempts(conn, vaultKey, new PublicKey(attempt.player)))
-      .filter((a) => a.status === "resolved")
+      // Filtered messages never reached the agent, so they stay out of its memory.
+      .filter((a) => a.status === "resolved" && a.outcome !== "filtered")
       .slice(0, 4)
       .reverse();
     const history: ModelMessage[] = previous.flatMap((a) => [
@@ -154,6 +169,7 @@ export async function* resolveAttempt(address: string): AsyncGenerator<StageEven
         } else {
           verdict = "vetoed";
           amount = 0;
+          recipient = player; // an attacker-chosen address must not be able to fail the record
           yield { type: "stage", stage: "review", status: "stop", detail: review.reason };
         }
       }
