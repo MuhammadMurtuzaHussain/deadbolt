@@ -1,0 +1,16 @@
+[toolchain]
+package_manager = "npm"
+
+[features]
+resolution = true
+skip-lint = false
+
+[programs.devnet]
+deadbolt = "B6LQc2vc12i3zGzciGE3ZTGpFbMPtwK3io5vGbMfNQh"
+
+[provider]
+cluster = "devnet"
+wallet = ".keys/deployer.json"
+
+[scripts]
+test = "npx tsx --test tests/*.test.ts"
