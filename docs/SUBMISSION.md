@@ -69,7 +69,11 @@ Deadbolt is a programmable vault: on-chain allowlists, per-transfer caps and hou
 **Gaming Track**
 A pay-per-prompt arena with five escalating cells, real prize pots that grow with every attempt, real winnings, a leaderboard and a lock you pick one pin at a time. Every move is a transaction, and players truly own what they win.
 
-## Demo video script (under 2 minutes)
+## Demo video
+
+https://youtu.be/aV9WSJLyHxY (1:28, unlisted on YouTube). Narration is an AI voice (Microsoft neural TTS, via edge-tts); all footage is real screen recording of the live devnet site. The YouTube description carries the same AI disclosure.
+
+## Demo video script (original plan, under 2 minutes)
 
 The rules require naming the hackathon at the start. Keep it a demo, not a pitch.
 

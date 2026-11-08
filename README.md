@@ -7,7 +7,7 @@ Deadbolt is an on-chain spend policy for AI agents, proven in public by a red-te
 Built for the **MLH Solana Hackathon**, 6-8 November 2026. Devnet only. No real funds.
 
 - **Live demo:** https://deadbolt-flame.vercel.app
-- **Demo video:** DEMO_VIDEO_URL
+- **Demo video:** https://youtu.be/aV9WSJLyHxY (1:28, AI-voiced narration over real screen recording)
 - **Program:** [`B6LQc2vc12i3zGzciGE3ZTGpFbMPtwK3io5vGbMfNQh`](https://explorer.solana.com/address/B6LQc2vc12i3zGzciGE3ZTGpFbMPtwK3io5vGbMfNQh?cluster=devnet) on devnet
 
 ### Same attack, same model, same prompt
